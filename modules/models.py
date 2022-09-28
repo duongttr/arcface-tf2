@@ -10,7 +10,7 @@ from tensorflow.keras.applications import (
     MobileNetV2,
     ResNet50
 )
-from .layers import (
+from modules.layers import (
     BatchNormalization,
     ArcMarginPenaltyLogists
 )
@@ -72,25 +72,29 @@ def NormHead(num_classes, w_decay=5e-4, name='NormHead'):
     return norm_head
 
 
-def ArcFaceModel(size=None, channels=3, num_classes=None, name='arcface_model',
+def ArcFaceModel(input_shape=None, categorical_labels=None, name='arcface_model',
                  margin=0.5, logist_scale=64, embd_shape=512,
-                 head_type='ArcHead', backbone_type='ResNet50',
+                 backbone_type='MobileNetV2',
                  w_decay=5e-4, use_pretrain=True, training=False):
     """Arc Face Model"""
-    x = inputs = Input([size, size, channels], name='input_image')
+    x = inputs = Input(input_shape, name='input_image')
 
     x = Backbone(backbone_type=backbone_type, use_pretrain=use_pretrain)(x)
 
-    embds = OutputLayer(embd_shape, w_decay=w_decay)(x)
+    vars_dict = vars()  
+    embds = []
+    for category in categorical_labels.keys():
+        print(category)
+        vars_dict[f'embds_{category}'] = OutputLayer(embd_shape, w_decay=w_decay, name=f'embds_{category}')(x)
+        embds.append(vars_dict[f'embds_{category}'])
 
     if training:
-        assert num_classes is not None
         labels = Input([], name='label')
-        if head_type == 'ArcHead':
-            logist = ArcHead(num_classes=num_classes, margin=margin,
-                             logist_scale=logist_scale)(embds, labels)
-        else:
-            logist = NormHead(num_classes=num_classes, w_decay=w_decay)(embds)
-        return Model((inputs, labels), logist, name=name)
+        logists = []
+        for category, classes in categorical_labels.items():
+            vars_dict[f'logist_{category}'] = ArcHead(num_classes=len(classes), margin=margin,
+                                logist_scale=logist_scale, name=f'archead_{category}')(vars_dict[f'embds_{category}'], labels)
+            logists.append(vars_dict[f'logist_{category}'])
+        return Model((inputs, labels), logists, name=name)
     else:
         return Model(inputs, embds, name=name)
