@@ -92,9 +92,10 @@ def ArcFaceModel(input_shape=None, categorical_labels=None, name='arcface_model'
         logists = []
         for category, classes in categorical_labels.items():
             vars_dict[f'label_{category}'] = Input([], name=f'label_{category}')
-            labels.append(vars_dict[f'label_{category}'])
+            
             vars_dict[f'logist_{category}'] = ArcHead(num_classes=len(classes), margin=margin,
-                                logist_scale=logist_scale, name=f'archead_{category}')(vars_dict[f'embds_{category}'], labels)
+                                logist_scale=logist_scale, name=f'archead_{category}')(vars_dict[f'embds_{category}'], vars_dict[f'label_{category}'])
+            labels.append(vars_dict[f'label_{category}'])
             logists.append(vars_dict[f'logist_{category}'])
         return Model([inputs]+labels, logists, name=name)
     else:
