@@ -121,7 +121,7 @@ def main(_):
         tb_callback._total_batches_seen = steps
         tb_callback._samples_seen = steps * cfg['batch_size']
         callbacks = [mc_callback, tb_callback]
-
+        
         model.fit(train_dataset,
                   epochs=cfg['epochs'],
                   steps_per_epoch=steps_per_epoch,
