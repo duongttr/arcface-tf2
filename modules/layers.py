@@ -48,3 +48,10 @@ class ArcMarginPenaltyLogists(tf.keras.layers.Layer):
         logists = tf.multiply(logists, self.logist_scale, 'arcface_logist')
 
         return logists
+    
+    def get_config(self):
+        config = super(ArcMarginPenaltyLogists, self).get_config()
+        config.update({ 'num_classes': self.num_classes,
+                        'margin': self.margin,
+                        'logits_scale': self.logits_scale })
+        return config
