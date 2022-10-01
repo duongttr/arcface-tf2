@@ -43,7 +43,7 @@ def OutputLayer(embd_shape, w_decay=5e-4, name='OutputLayer'):
     def output_layer(x_in):
         inputs = Input(x_in.shape[1:])
         x = BatchNormalization()(inputs)
-        x = Dropout(rate=0.5)(x)
+        # x = Dropout(rate=0.5)(x)
         x = Flatten()(x)
         x = Dense(embd_shape, kernel_regularizer=_regularizer(w_decay), use_bias=False)(x)
         x = BatchNormalization()(x)
