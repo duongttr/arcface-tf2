@@ -5,13 +5,13 @@ from tensorflow.keras.layers import (
     Dropout,
     Flatten,
     Input,
+    BatchNormalization
 )
 from tensorflow.keras.applications import (
     MobileNetV2,
     ResNet50
 )
 from modules.layers import (
-    BatchNormalization,
     ArcMarginPenaltyLogists
 )
 
