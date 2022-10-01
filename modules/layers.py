@@ -22,7 +22,7 @@ class ArcMarginPenaltyLogists(tf.keras.layers.Layer):
         self.logist_scale = logist_scale
 
     def build(self, input_shape):
-        self.w = self.add_variable(
+        self.w = self.add_weight(
             "weights", shape=[int(input_shape[-1]), self.num_classes])
         self.cos_m = tf.identity(math.cos(self.margin), name='cos_m')
         self.sin_m = tf.identity(math.sin(self.margin), name='sin_m')
