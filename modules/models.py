@@ -41,8 +41,8 @@ def Backbone(backbone_type='ResNet50', use_pretrain=True):
 def OutputLayer(embd_shape, w_decay=5e-4, name='OutputLayer'):
     """Output Later"""
     def output_layer(x_in):
-        x = inputs = Input(x_in.shape[1:])
-        x = BatchNormalization()(x)
+        inputs = Input(x_in.shape[1:])
+        x = BatchNormalization()(inputs)
         x = Dropout(rate=0.5)(x)
         x = Flatten()(x)
         x = Dense(embd_shape, kernel_regularizer=_regularizer(w_decay), use_bias=False)(x)
@@ -54,11 +54,11 @@ def OutputLayer(embd_shape, w_decay=5e-4, name='OutputLayer'):
 def ArcHead(num_classes, margin=0.5, logist_scale=64, name='ArcHead'):
     """Arc Head"""
     def arc_head(x_in, y_in):
-        x = inputs1 = Input(x_in.shape[1:])
+        inputs1 = Input(x_in.shape[1:])
         y = Input(y_in.shape[1:])
         x = ArcMarginPenaltyLogists(num_classes=num_classes,
                                     margin=margin,
-                                    logist_scale=logist_scale)(x, y)
+                                    logist_scale=logist_scale)(inputs1, y)
         return Model((inputs1, y), x, name=name)((x_in, y_in))
     return arc_head
 

@@ -34,7 +34,7 @@ class ArcMarginPenaltyLogists(tf.keras.layers.Layer):
         normed_w = tf.nn.l2_normalize(self.w, axis=0, name='normed_weights')
 
         cos_t = tf.matmul(normed_embds, normed_w, name='cos_t')
-        sin_t = tf.sqrt(1. - cos_t ** 2, name='sin_t')
+        sin_t = tf.sqrt(tf.clip_by_value(1. - cos_t ** 2, 1e-9, 1.0, name='fix_nan'), name='sin_t')
 
         cos_mt = tf.subtract(
             cos_t * self.cos_m, sin_t * self.sin_m, name='cos_mt')
