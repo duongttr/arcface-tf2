@@ -58,7 +58,8 @@ def ArcHead(num_classes, margin=0.5, logist_scale=64, name='ArcHead'):
         y = Input(y_in.shape[1:])
         x = ArcMarginPenaltyLogists(num_classes=num_classes,
                                     margin=margin,
-                                    logist_scale=logist_scale)(inputs1, y)
+                                    logist_scale=logist_scale, 
+                                    name=f'margin_{name}')(inputs1, y)
         return Model((inputs1, y), x, name=name)((x_in, y_in))
     return arc_head
 
