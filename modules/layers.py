@@ -4,7 +4,7 @@ import math
 
 class ArcMarginPenaltyLogits(tf.keras.layers.Layer):
     """ArcMarginPenaltyLogists"""
-    def __init__(self, num_classes, kernel_regularizer, margin=0.5, scale=64, name='arc_margin_penalty'):
+    def __init__(self, num_classes, kernel_regularizer, margin=0.5, scale=64., name='arc_margin_penalty'):
         super(ArcMarginPenaltyLogits, self).__init__(name=name)
         self.num_classes = num_classes
         self.margin = margin

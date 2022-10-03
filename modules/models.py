@@ -50,7 +50,7 @@ def OutputLayer(embd_shape, w_decay=5e-4, name='OutputLayer'):
     return output_layer
 
 
-def ArcHead(num_classes, margin=0.5, scale=64, w_decay=5e-4, name='ArcHead'):
+def ArcHead(num_classes, margin=0.5, scale=64., w_decay=5e-4, name='ArcHead'):
     """Arc Head"""
     def arc_head(x_in, y_in):
         inputs1 = Input(x_in.shape[1:])
@@ -74,7 +74,7 @@ def NormHead(num_classes, w_decay=5e-4, name='NormHead'):
 
 
 def ArcFaceModel(input_shape=None, categorical_labels=None, name='arcface_model',
-                 margin=0.5, logist_scale=64, embd_shape=512,
+                 margin=0.5, logist_scale=64., embd_shape=512,
                  backbone_type='MobileNetV2',
                  w_decay=5e-4, use_pretrain=True, training=False):
     """Arc Face Model"""
