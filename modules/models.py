@@ -92,7 +92,7 @@ def ArcFaceModel(input_shape=None, categorical_labels=None, name='arcface_model'
         for category, classes in categorical_labels.items():
             curr_label = Input([], name=f'label_{category}')
             curr_logist = ArcHead(num_classes=len(classes), margin=margin,
-                                logist_scale=logist_scale, name=f'archead_{category}')\
+                                scale=logist_scale, name=f'archead_{category}')\
                                     (embds[category], curr_label)
             labels.append(curr_label)
             logists.append(curr_logist)
