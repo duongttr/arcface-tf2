@@ -76,6 +76,7 @@ def NormHead(num_classes, w_decay=5e-4, name='NormHead'):
 def ArcFaceModel(input_shape=None, categorical_labels=None, name='arcface_model',
                  margin=0.5, logist_scale=64., embd_shape=512,
                  backbone_type='MobileNetV2',
+                 head_type='ArcHead',
                  w_decay=5e-4, use_pretrain=True, training=False):
     """Arc Face Model"""
     x = inputs = Input(input_shape, name='input_image')
@@ -91,9 +92,13 @@ def ArcFaceModel(input_shape=None, categorical_labels=None, name='arcface_model'
         logists = []
         for category, classes in categorical_labels.items():
             curr_label = Input([], name=f'label_{category}')
-            curr_logist = ArcHead(num_classes=len(classes), margin=margin,
-                                scale=logist_scale, name=f'archead_{category}')\
-                                    (embds[category], curr_label)
+            curr_logist = None
+            if head_type == 'ArcHead':
+                curr_logist = ArcHead(num_classes=len(classes), margin=margin,
+                                    scale=logist_scale, name=f'archead_{category}')\
+                                        (embds[category], curr_label)
+            elif head_type == 'NormHead':
+                curr_logist = NormHead(num_classes=len(classes), name=f'normhead_{category}')(embds[category])
             labels.append(curr_label)
             logists.append(curr_logist)
         return Model([inputs]+labels, logists, name=name)
