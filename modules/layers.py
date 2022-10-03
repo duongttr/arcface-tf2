@@ -39,7 +39,7 @@ class ArcMarginPenaltyLogits(tf.keras.layers.Layer):
         cos_mt_temp = tf.where(cond, cos_mt, keep_val)
 
         mask = tf.one_hot(tf.cast(labels, tf.int32), depth=self.num_classes, name='one_hot_mask')
-        inv_mask = tf.substract(1., mask, name='inverse_mask')
+        inv_mask = tf.subtract(1., mask, name='inverse_mask')
         s_cos_t = tf.multiply(self.scale, cos_t, name='scalar_cos_t')
         logits = tf.add(tf.multiply(s_cos_t, inv_mask), tf.multiply(cos_mt_temp, mask), name='arcface_loss_output')
         return logits
