@@ -13,7 +13,7 @@ class ArcMarginPenaltyLogits(tf.keras.layers.Layer):
 
     def build(self, input_shape):
         self.w = self.add_weight(name='weights', initializer='glorot_uniform', 
-                                shape=[input_shape.shape[-1], self.num_classes],
+                                shape=[input_shape[-1], self.num_classes],
                                 trainable=True,
                                 regularizer=self.kernel_regularizer)
         
