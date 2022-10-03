@@ -12,7 +12,7 @@ from tensorflow.keras.applications import (
     ResNet50
 )
 from modules.layers import (
-    ArcMarginPenaltyLogists
+    ArcMarginPenaltyLogits
 )
 
 
@@ -42,23 +42,23 @@ def OutputLayer(embd_shape, w_decay=5e-4, name='OutputLayer'):
     """Output Later"""
     def output_layer(x_in):
         inputs = Input(x_in.shape[1:])
-        x = BatchNormalization()(inputs)
-        # x = Dropout(rate=0.5)(x)
-        x = Flatten()(x)
+        x = Flatten()(inputs)
+        x = Dropout(rate=0.5)(x)
         x = Dense(embd_shape, kernel_regularizer=_regularizer(w_decay), use_bias=False)(x)
         x = BatchNormalization()(x)
         return Model(inputs, x, name=name)(x_in)
     return output_layer
 
 
-def ArcHead(num_classes, margin=0.5, logist_scale=64, name='ArcHead'):
+def ArcHead(num_classes, margin=0.5, scale=64, w_decay=5e-4, name='ArcHead'):
     """Arc Head"""
     def arc_head(x_in, y_in):
         inputs1 = Input(x_in.shape[1:])
         y = Input(y_in.shape[1:])
-        x = ArcMarginPenaltyLogists(num_classes=num_classes,
+        x = ArcMarginPenaltyLogits(num_classes=num_classes,
                                     margin=margin,
-                                    logist_scale=logist_scale, 
+                                    kernel_regularizer=_regularizer(w_decay),
+                                    scale=scale, 
                                     name=f'margin_{name}')(inputs1, y)
         return Model((inputs1, y), x, name=name)((x_in, y_in))
     return arc_head

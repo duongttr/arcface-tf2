@@ -2,61 +2,52 @@ import tensorflow as tf
 import math
 
 
-class BatchNormalization(tf.keras.layers.BatchNormalization):
-    """Make trainable=False freeze BN for real (the og version is sad).
-       ref: https://github.com/zzh8829/yolov3-tf2
-    """
-    def call(self, x, training=False):
-        if training is None:
-            training = tf.constant(False)
-        training = tf.logical_and(training, self.trainable)
-        return super().call(x, training)
-
-
-class ArcMarginPenaltyLogists(tf.keras.layers.Layer):
+class ArcMarginPenaltyLogits(tf.keras.layers.Layer):
     """ArcMarginPenaltyLogists"""
-    def __init__(self, num_classes, margin=0.5, logist_scale=64, **kwargs):
-        super(ArcMarginPenaltyLogists, self).__init__(**kwargs)
+    def __init__(self, num_classes, kernel_regularizer, margin=0.5, scale=64, name='arc_margin_penalty'):
+        super(ArcMarginPenaltyLogits, self).__init__(name=name)
         self.num_classes = num_classes
         self.margin = margin
-        self.logist_scale = logist_scale
+        self.scale = scale
+        self.kernel_regularizer = kernel_regularizer
 
     def build(self, input_shape):
-        weight_init = tf.keras.initializers.he_uniform()
-        self.w = tf.Variable(initial_value=weight_init(
-            shape=[int(input_shape[-1]), self.num_classes],
-            dtype=tf.float32
-        ), trainable=True)
-        # self.w = self.add_weight(
-        #     "weights", shape=[int(input_shape[-1]), self.num_classes])
-        self.cos_m = tf.identity(math.cos(self.margin), name=f'cos_m_{self.name}')
-        self.sin_m = tf.identity(math.sin(self.margin), name=f'sin_m_{self.name}')
-        self.th = tf.identity(math.cos(math.pi - self.margin), name=f'th_{self.name}')
-        self.mm = tf.multiply(self.sin_m, self.margin, name=f'mm_{self.name}')
+        self.w = self.add_weight(name='weights', initializer='glorot_uniform', 
+                                shape=[input_shape.shape[-1], self.num_classes],
+                                trainable=True,
+                                regularizer=self.kernel_regularizer)
+        
+        self.cos_m = tf.math.cos(self.margin)
+        self.sin_m = tf.math.sin(self.margin)
+        self.mm = self.sin_m * self.margin
+        self.pi = tf.constant(math.pi)
+        self.threshold = tf.math.cos(self.pi - self.margin)
 
     def call(self, embds, labels):
-        normed_embds = tf.nn.l2_normalize(embds, axis=1, name=f'normed_embd_{self.name}')
-        normed_w = tf.nn.l2_normalize(self.w, axis=0, name=f'normed_weights_{self.name}')
+        normed_embds = tf.nn.l2_normalize(embds, axis=1, name='normed_embd')
+        normed_w = tf.nn.l2_normalize(self.w, axis=0, name='normed_weights')
 
-        cos_t = tf.matmul(normed_embds, normed_w, name=f'cos_t_{self.name}')
-        sin_t = tf.sqrt(tf.clip_by_value(1. - cos_t ** 2, 1e-9, 1.0, name=f'fix_nan_{self.name}'), name=f'sin_t_{self.name}')
+        cos_t = tf.matmul(normed_embds, normed_w, name='cos_t')
+        cos_t2 = tf.square(cos_t, name='cos_2')
+        sin_t2 = tf.subtract(1., cos_t2, name='sin_2')
+        sin_t = tf.sqrt(sin_t2, name='sin_t')
+        cos_mt = self.scale * tf.subtract(tf.multiply(cos_t, self.cos_m), tf.multiply(sin_t, self.sin_m), name='cos_mt')
+        cond_v = cos_t - self.threshold
+        cond = tf.cast(tf.nn.relu(cond_v, name='if_else'), dtype=tf.bool)
+        
+        keep_val = self.scale * (cos_t - self.mm)
+        cos_mt_temp = tf.where(cond, cos_mt, keep_val)
 
-        cos_mt = tf.subtract(
-            cos_t * self.cos_m, sin_t * self.sin_m, name=f'cos_mt_{self.name}')
-
-        cos_mt = tf.where(cos_t > self.th, cos_mt, cos_t - self.mm)
-
-        mask = tf.one_hot(tf.cast(labels, tf.int32), depth=self.num_classes,
-                          name=f'one_hot_mask_{self.name}')
-
-        logists = tf.where(mask == 1., cos_mt, cos_t)
-        logists = tf.multiply(logists, self.logist_scale, 'arcface_logist')
-
-        return logists
+        mask = tf.one_hot(tf.cast(labels, tf.int32), depth=self.num_classes, name='one_hot_mask')
+        inv_mask = tf.substract(1., mask, name='inverse_mask')
+        s_cos_t = tf.multiply(self.scale, cos_t, name='scalar_cos_t')
+        logits = tf.add(tf.multiply(s_cos_t, inv_mask), tf.multiply(cos_mt_temp, mask), name='arcface_loss_output')
+        return logits
     
     def get_config(self):
-        config = super(ArcMarginPenaltyLogists, self).get_config()
+        config = super(ArcMarginPenaltyLogits, self).get_config()
         config.update({ 'num_classes': self.num_classes,
                         'margin': self.margin,
-                        'logits_scale': self.logist_scale })
+                        'logits_scale': self.scale,
+                        'kernel_regularizer': self.kernel_regularizer })
         return config
