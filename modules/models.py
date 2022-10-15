@@ -5,20 +5,20 @@ from tensorflow.keras.layers import (
     Dropout,
     Flatten,
     Input,
-    BatchNormalization
+    BatchNormalization,
+    GlobalAveragePooling2D
 )
 from tensorflow.keras.applications import (
     MobileNetV2,
-    ResNet50
+    ResNet50,
+    EfficientNetB0
 )
 from modules.layers import (
     ArcMarginPenaltyLogits
 )
 
-
 def _regularizer(weights_decay=5e-4):
     return tf.keras.regularizers.l2(weights_decay)
-
 
 def Backbone(backbone_type='ResNet50', use_pretrain=True):
     """Backbone Model"""
@@ -33,6 +33,9 @@ def Backbone(backbone_type='ResNet50', use_pretrain=True):
         elif backbone_type == 'MobileNetV2':
             return MobileNetV2(input_shape=x_in.shape[1:], include_top=False,
                                weights=weights)(x_in)
+        elif backbone_type == 'EfficientNetB0':
+            return EfficientNetB0(input_shape=x_in.shape[1:], include_top=False,
+                                weights=weights)(x_in)
         else:
             raise TypeError('backbone_type error!')
     return backbone
@@ -42,9 +45,9 @@ def OutputLayer(embd_shape, w_decay=5e-4, name='OutputLayer'):
     """Output Later"""
     def output_layer(x_in):
         inputs = Input(x_in.shape[1:])
-        x = Flatten()(inputs)
+        x = GlobalAveragePooling2D()(inputs)
         x = Dropout(rate=0.5)(x)
-        x = Dense(embd_shape, kernel_regularizer=_regularizer(w_decay), use_bias=False)(x)
+        x = Dense(embd_shape, kernel_regularizer=_regularizer(w_decay))(x)
         x = BatchNormalization()(x)
         return Model(inputs, x, name=name)(x_in)
     return output_layer
@@ -94,8 +97,15 @@ def ArcFaceModel(input_shape=None, categorical_labels=None, name='arcface_model'
             curr_label = Input([], name=f'label_{category}')
             curr_logist = None
             if head_type == 'ArcHead':
-                curr_logist = ArcHead(num_classes=len(classes), margin=margin,
-                                    scale=logist_scale, name=f'archead_{category}')\
+                m, s  = None, None
+                if isinstance(margin, dict):
+                    m = margin[category]
+                    s = logist_scale[category]
+                else:
+                    m = margin
+                    s = logist_scale
+                curr_logist = ArcHead(num_classes=len(classes), margin=m,
+                                    scale=s, name=f'archead_{category}')\
                                         (embds[category], curr_label)
             elif head_type == 'NormHead':
                 curr_logist = NormHead(num_classes=len(classes), name=f'normhead_{category}')(embds[category])
