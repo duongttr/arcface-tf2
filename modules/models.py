@@ -100,10 +100,14 @@ def ArcFaceModel(input_shape=None, categorical_labels=None, name='arcface_model'
                 m, s  = None, None
                 if isinstance(margin, dict):
                     m = margin[category]
-                    s = logist_scale[category]
                 else:
                     m = margin
+
+                if isinstance(logist_scale, dict):
+                    s = logist_scale[category]
+                else:
                     s = logist_scale
+                
                 curr_logist = ArcHead(num_classes=len(classes), margin=m,
                                     scale=s, name=f'archead_{category}')\
                                         (embds[category], curr_label)
