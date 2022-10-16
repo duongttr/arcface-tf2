@@ -20,7 +20,7 @@ from modules.layers import (
 def _regularizer(weights_decay=5e-4):
     return tf.keras.regularizers.l2(weights_decay)
 
-def Backbone(backbone_type='ResNet50', use_pretrain=True):
+def Backbone(backbone_type='ResNet50', use_pretrain=True, trainable=True):
     """Backbone Model"""
     weights = None
     if use_pretrain:
@@ -28,16 +28,18 @@ def Backbone(backbone_type='ResNet50', use_pretrain=True):
 
     def backbone(x_in):
         if backbone_type == 'ResNet50':
-            return ResNet50(input_shape=x_in.shape[1:], include_top=False,
-                            weights=weights)(x_in)
+            backbone = ResNet50(input_shape=x_in.shape[1:], include_top=False,
+                                weights=weights)(x_in)
         elif backbone_type == 'MobileNetV2':
-            return MobileNetV2(input_shape=x_in.shape[1:], include_top=False,
+            backbone = MobileNetV2(input_shape=x_in.shape[1:], include_top=False,
                                weights=weights)(x_in)
         elif backbone_type == 'EfficientNetB0':
-            return EfficientNetB0(input_shape=x_in.shape[1:], include_top=False,
+            backbone = EfficientNetB0(input_shape=x_in.shape[1:], include_top=False,
                                 weights=weights)(x_in)
         else:
             raise TypeError('backbone_type error!')
+        backbone.trainable = trainable
+        return backbone
     return backbone
 
 
@@ -80,11 +82,12 @@ def ArcFaceModel(input_shape=None, categorical_labels=None, name='arcface_model'
                  margin=0.5, logist_scale=64., embd_shape=512,
                  backbone_type='MobileNetV2',
                  head_type='ArcHead',
+                 backbone_trainable=True,
                  w_decay=5e-4, use_pretrain=True, training=False):
     """Arc Face Model"""
     x = inputs = Input(input_shape, name='input_image')
 
-    x = Backbone(backbone_type=backbone_type, use_pretrain=use_pretrain)(x)
+    x = Backbone(backbone_type=backbone_type, use_pretrain=use_pretrain, trainable=backbone_trainable)(x)
 
     embds = {}
     for category in categorical_labels.keys():
