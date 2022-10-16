@@ -48,6 +48,6 @@ class ArcMarginPenaltyLogits(tf.keras.layers.Layer):
         config = super(ArcMarginPenaltyLogits, self).get_config()
         config.update({ 'num_classes': self.num_classes,
                         'margin': self.margin,
-                        'logits_scale': self.scale,
+                        'scale': self.scale,
                         'kernel_regularizer': self.kernel_regularizer })
         return config
